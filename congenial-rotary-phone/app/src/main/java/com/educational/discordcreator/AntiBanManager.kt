@@ -570,6 +570,44 @@ $oscpuBlock
     fun injectAntiDetection(webView: WebView) = injectAntiDetection(webView, generateProfile())
 
     /**
+     * Returns the JS string to pass to WebViewCompat.addDocumentStartJavaScript().
+     * This runs SYNCHRONOUSLY before any page script — including inline <script> tags.
+     * It is the only method guaranteed to fire before Discord's React bundle executes.
+     */
+    fun getDocumentStartScript(): String = """
+(function(){
+  if(window.__dsEarlyDone)return;
+  window.__dsEarlyDone=true;
+  var _d=Object.defineProperty.bind(Object);
+  function dn(k,v){try{_d(navigator,k,{get:function(){return v;},configurable:true});}catch(e){}}
+  dn('webdriver',false);
+  dn('vendor','Google Inc.');
+  dn('platform','Win32');
+  dn('maxTouchPoints',0);
+  dn('cookieEnabled',true);
+  dn('doNotTrack',null);
+  dn('hardwareConcurrency',8);
+  dn('deviceMemory',8);
+  dn('language','en-US');
+  dn('languages',['en-US','en']);
+  try{_d(navigator,'userAgentData',{get:function(){return{brands:[{brand:'Chromium',version:'127'},{brand:'Google Chrome',version:'127'},{brand:'Not-A.Brand',version:'8'}],mobile:false,platform:'Windows',getHighEntropyValues:function(){return Promise.resolve({architecture:'x86',bitness:'64',platform:'Windows',platformVersion:'10.0.0',uaFullVersion:'127.0.6533.88'});}}; },configurable:true});}catch(e){}
+  try{if(!window.chrome||!window.chrome.runtime){var _ts=Date.now()/1000;window.chrome={app:{isInstalled:false},csi:function(){return{startE:_ts,onloadT:_ts+0.4,pageT:400,tran:15};},loadTimes:function(){return{connectionInfo:'h2',npnNegotiatedProtocol:'h2',wasNpnNegotiated:true,wasFetchedViaSpdy:true};},runtime:{OnInstalledReason:{CHROME_UPDATE:'chrome_update',INSTALL:'install',SHARED_MODULE_UPDATE:'shared_module_update',UPDATE:'update'},OnRestartRequiredReason:{APP_UPDATE:'app_update',OS_UPDATE:'os_update',PERIODIC:'periodic'},PlatformOs:{ANDROID:'android',CROS:'cros',LINUX:'linux',MAC:'mac',OPENBSD:'openbsd',WIN:'win'},RequestUpdateCheckStatus:{NO_UPDATE:'no_update',THROTTLED:'throttled',UPDATE_AVAILABLE:'update_available'}}};}}catch(e){}
+  try{_d(document,'hidden',{get:function(){return false;},configurable:true});_d(document,'visibilityState',{get:function(){return'visible';},configurable:true});}catch(e){}
+  try{var _origMM=window.matchMedia;window.matchMedia=function(q){try{var r=_origMM&&_origMM.call(window,q);if(r&&typeof r.matches!=='undefined')return r;}catch(ex){}return{matches:false,media:q||'',onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return true;}};};}catch(e){}
+  try{_d(window,'outerWidth',{get:function(){return 1920;},configurable:true});_d(window,'outerHeight',{get:function(){return 1080;},configurable:true});_d(window,'devicePixelRatio',{get:function(){return 1;},configurable:true});}catch(e){}
+  try{var _sp={width:1920,height:1080,availWidth:1920,availHeight:1040,colorDepth:24,pixelDepth:24};['width','height','availWidth','availHeight','colorDepth','pixelDepth'].forEach(function(k){try{_d(screen,k,{get:(function(v){return function(){return v;};}(_sp[k])),configurable:true});}catch(e){}});}catch(e){}
+  try{var _fp=[{name:'PDF Viewer',filename:'internal-pdf-viewer',description:'Portable Document Format'},{name:'Chrome PDF Viewer',filename:'internal-pdf-viewer',description:'Portable Document Format'},{name:'Chromium PDF Viewer',filename:'internal-pdf-viewer',description:'Portable Document Format'},{name:'Microsoft Edge PDF Viewer',filename:'internal-pdf-viewer',description:'Portable Document Format'},{name:'WebKit built-in PDF',filename:'internal-pdf-viewer',description:'Portable Document Format'}];_d(navigator,'plugins',{get:function(){var a=Object.create(PluginArray.prototype);a.length=_fp.length;_fp.forEach(function(p,i){a[i]=p;});a.item=function(i){return _fp[i]||null;};a.namedItem=function(n){return _fp.find(function(p){return p.name===n;})||null;};a.refresh=function(){};return a;},configurable:true});}catch(e){}
+  try{var _fm=[{type:'application/pdf',suffixes:'pdf',description:'Portable Document Format'},{type:'text/pdf',suffixes:'pdf',description:'Portable Document Format'}];_d(navigator,'mimeTypes',{get:function(){var a=Object.create(MimeTypeArray.prototype);a.length=_fm.length;_fm.forEach(function(m,i){a[i]=m;});a.item=function(i){return _fm[i]||null;};a.namedItem=function(n){return _fm.find(function(m){return m.type===n;})||null;};return a;},configurable:true});}catch(e){}
+  try{var _pq=navigator.permissions&&navigator.permissions.query&&navigator.permissions.query.bind(navigator.permissions);if(_pq)navigator.permissions.query=function(p){if(p.name==='notifications')return Promise.resolve({state:'default',onchange:null});return _pq(p);};}catch(e){}
+  try{if(navigator.getBattery)navigator.getBattery=function(){return Promise.resolve({charging:true,chargingTime:0,dischargingTime:Infinity,level:1.0,addEventListener:function(){},removeEventListener:function(){}});};}catch(e){}
+  ['Android','WebViewBridge','_cordovaNative','callPhantom','_phantom','phantom','__nightmare','domAutomation','domAutomationController','__webdriver_script_fn','__driver_evaluate','__webdriver_evaluate'].forEach(function(k){try{delete window[k];}catch(e){}});
+  try{if(window.screen&&window.screen.orientation){_d(screen.orientation,'type',{get:function(){return'landscape-primary';},configurable:true});_d(screen.orientation,'angle',{get:function(){return 0;},configurable:true});}}catch(e){}
+  try{if(window.RTCPeerConnection){var _oRTC=window.RTCPeerConnection;window.RTCPeerConnection=function(c,x){if(c&&c.iceServers)c.iceServers=[];return new _oRTC(c,x);};window.RTCPeerConnection.prototype=_oRTC.prototype;}}catch(e){}
+  try{_d(navigator,'connection',{get:function(){return{rtt:50,downlink:10,effectiveType:'4g',saveData:false,addEventListener:function(){},removeEventListener:function(){}};},configurable:true});}catch(e){}
+})();
+""".trimIndent()
+
+    /**
      * Early-signal injection — call from onPageStarted BEFORE Discord's JS bundle runs.
      * Covers the exact set of properties Discord checks to decide whether to render the
      * registration form.  The full 30-signal injection still runs in onPageFinished.
