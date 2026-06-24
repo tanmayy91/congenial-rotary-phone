@@ -568,4 +568,133 @@ $oscpuBlock
     }
 
     fun injectAntiDetection(webView: WebView) = injectAntiDetection(webView, generateProfile())
+
+    /**
+     * Early-signal injection — call from onPageStarted BEFORE Discord's JS bundle runs.
+     * Covers the exact set of properties Discord checks to decide whether to render the
+     * registration form.  The full 30-signal injection still runs in onPageFinished.
+     */
+    fun injectEarlySignals(webView: WebView, profile: FingerprintProfile) {
+        val langsJson  = profile.languages.joinToString(",") { "\"$it\"" }
+        val chromeMaj  = profile.chromeMajorVersion.toString()
+        val uadPlatform = if (profile.isMac) "macOS" else "Windows"
+        val brandsJson = when {
+            profile.isEdge     -> """[{brand:"Chromium",version:"$chromeMaj"},{brand:"Microsoft Edge",version:"$chromeMaj"},{brand:"Not-A.Brand",version:"8"}]"""
+            !profile.isFirefox -> """[{brand:"Chromium",version:"$chromeMaj"},{brand:"Google Chrome",version:"$chromeMaj"},{brand:"Not-A.Brand",version:"8"}]"""
+            else               -> "undefined"
+        }
+        val js = """
+(function() {
+  if (window.__earlyDone) return;
+  window.__earlyDone = true;
+
+  /* ── navigator signals ─────────────────────────────────────────── */
+  var _nav = navigator;
+  function defNav(k, v) {
+    try { Object.defineProperty(_nav, k, { get: function(){ return v; }, configurable: true }); } catch(e) {}
+  }
+  defNav('webdriver',           false);
+  defNav('vendor',              'Google Inc.');
+  defNav('platform',            '${profile.platform}');
+  defNav('language',            '${profile.language}');
+  defNav('languages',           [$langsJson]);
+  defNav('maxTouchPoints',      0);
+  defNav('hardwareConcurrency', ${profile.hardwareConcurrency});
+  defNav('deviceMemory',        ${profile.deviceMemory});
+  defNav('cookieEnabled',       true);
+  defNav('doNotTrack',          null);
+
+  /* ── navigator.userAgentData (Chrome only) ─────────────────────── */
+  try {
+    if (!_nav.userAgentData && '$brandsJson' !== 'undefined') {
+      Object.defineProperty(_nav, 'userAgentData', {
+        get: function() {
+          return { brands: $brandsJson, mobile: false, platform: '$uadPlatform',
+                   getHighEntropyValues: function() { return Promise.resolve({}); } };
+        }, configurable: true
+      });
+    }
+  } catch(e) {}
+
+  /* ── window.chrome ──────────────────────────────────────────────── */
+  try {
+    if (!window.chrome || !window.chrome.runtime) {
+      var _ts = Date.now() / 1000;
+      window.chrome = {
+        app: { isInstalled: false },
+        csi: function() { return { startE: _ts, onloadT: _ts + 0.4, pageT: 400, tran: 15 }; },
+        loadTimes: function() { return { connectionInfo:'h2', npnNegotiatedProtocol:'h2',
+          wasNpnNegotiated:true, wasFetchedViaSpdy:true }; },
+        runtime: {}
+      };
+    }
+  } catch(e) {}
+
+  /* ── window / screen dimensions ─────────────────────────────────── */
+  try {
+    var _sw = ${profile.screenWidth}, _sh = ${profile.screenHeight}, _pr = ${profile.pixelRatio};
+    function defWin(k, v) {
+      try { Object.defineProperty(window, k, { get: function(){ return v; }, configurable: true }); } catch(e) {}
+    }
+    defWin('outerWidth',       _sw);
+    defWin('outerHeight',      _sh);
+    defWin('devicePixelRatio', _pr);
+  } catch(e) {}
+
+  /* ── document visibility — must be "visible" ────────────────────── */
+  try {
+    Object.defineProperty(document, 'hidden',          { get: function(){ return false;     }, configurable:true });
+    Object.defineProperty(document, 'visibilityState', { get: function(){ return 'visible'; }, configurable:true });
+  } catch(e) {}
+
+  /* ── matchMedia polyfill — Discord React uses this at render time ── */
+  try {
+    var _origMM = window.matchMedia && window.matchMedia.bind(window);
+    window.matchMedia = function(q) {
+      try {
+        var r = _origMM ? _origMM(q) : null;
+        if (r) return r;
+      } catch(ex) {}
+      return {
+        matches: (q && q.indexOf('prefers-color-scheme: dark') !== -1) ? false : false,
+        media: q || '', onchange: null,
+        addListener:    function() {},
+        removeListener: function() {},
+        addEventListener:    function() {},
+        removeEventListener: function() {},
+        dispatchEvent: function() { return true; }
+      };
+    };
+  } catch(e) {}
+
+  /* ── Remove Android / WebView globals ───────────────────────────── */
+  try {
+    ['Android','WebViewBridge','_cordovaNative','__REACT_DEVTOOLS_GLOBAL_HOOK__'].forEach(function(k) {
+      try { delete window[k]; } catch(ex) {}
+    });
+  } catch(e) {}
+
+  /* ── Remove webdriver / automation markers ──────────────────────── */
+  try {
+    ['callPhantom','_phantom','phantom','__nightmare','domAutomation','domAutomationController',
+     '__webdriver_script_fn','__driver_evaluate','__webdriver_evaluate'].forEach(function(k) {
+      try { delete window[k]; } catch(ex) {}
+    });
+  } catch(e) {}
+
+  /* ── Suppress console.warn/error (hides bot-detection warnings) ─── */
+  try {
+    ['warn','error','debug'].forEach(function(m) {
+      var _o = console[m];
+      console[m] = function() {
+        var a = Array.prototype.slice.call(arguments).join(' ');
+        if (a.indexOf('webdriver') !== -1 || a.indexOf('automation') !== -1) return;
+        _o && _o.apply(console, arguments);
+      };
+    });
+  } catch(e) {}
+})();
+""".trimIndent()
+        webView.evaluateJavascript(js, null)
+    }
 }
