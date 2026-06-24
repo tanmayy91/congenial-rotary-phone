@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK v2
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build Debug APK
+    name: Build Debug APK v2
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -45,22 +45,22 @@ jobs:
       - name: List APK output
         run: find . -name "*.apk" -type f
 
-      - name: Upload Debug APK
+      - name: Upload Debug APK v2
         uses: actions/upload-artifact@v4
         with:
-          name: discord-creator-debug-apk
+          name: discord-creator-v2-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
       - name: APK Download Info
         run: |
           echo "══════════════════════════════════════════════"
-          echo "✅  Build successful!"
+          echo "✅  Build v2 successful!"
           echo ""
           echo "📱 Download the APK:"
           echo "   Go to the 'Actions' tab in your GitHub repo,"
           echo "   click this workflow run, then download the"
-          echo "   artifact named  discord-creator-debug-apk"
+          echo "   artifact named  discord-creator-v2-debug-apk"
           echo ""
           echo "   Direct URL (after login):"
           echo "   https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
