@@ -174,11 +174,9 @@ class MainActivity : AppCompatActivity() {
         bindViews()
         setupWebView()
         setupButtons()
-        // Pre-inject accessibility cookies on app start for maximum bypass coverage
         LocalHCaptchaSolver.refreshAccessibilityCookies()
         webView.loadUrl("https://discord.com/register")
-        log("[ v2 ] Discord Creator v2 ready")
-        log("[ NAV ] discord.com/register loaded")
+        log("[ v2 ] Discord Creator v2 ready — early-signal injection active")
         log("[ TIP ] Tap 'Local Solver' when a CAPTCHA appears for advanced bypass")
         log("──────────────────────────────")
     }
@@ -210,30 +208,47 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         webView.settings.apply {
-            javaScriptEnabled        = true
-            domStorageEnabled        = true
-            databaseEnabled          = true
+            javaScriptEnabled              = true
+            domStorageEnabled              = true
+            databaseEnabled                = true
             setSupportMultipleWindows(false)
-            userAgentString          = AntiBanManager.getRandomUserAgent()
-            mixedContentMode         = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            useWideViewPort          = true
-            loadWithOverviewMode     = true
-            cacheMode                = WebSettings.LOAD_DEFAULT
+            userAgentString                = AntiBanManager.getRandomUserAgent()
+            mixedContentMode               = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            useWideViewPort                = true
+            loadWithOverviewMode           = true
+            cacheMode                      = WebSettings.LOAD_DEFAULT
             setSupportZoom(true)
-            builtInZoomControls      = false
+            builtInZoomControls            = false
+            mediaPlaybackRequiresUserGesture = false
+            allowFileAccess                = false
+            allowContentAccess             = false
+            javaScriptCanOpenWindowsAutomatically = false
         }
+        android.webkit.WebView.setWebContentsDebuggingEnabled(false)
 
         webView.addJavascriptInterface(DiscordBridge(), "DiscordBridge")
 
         webView.webViewClient = object : WebViewClient() {
+
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                url ?: return
+                etUrl.setText(url)
+                log("[ NAV ] ${url.take(70)}")
+                // Inject BEFORE Discord's React bundle executes — this is what makes the
+                // registration form render correctly instead of a blank/branded stub.
+                if (url.contains("discord.com")) {
+                    AntiBanManager.injectEarlySignals(webView, currentProfile)
+                }
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 url ?: return
-                etUrl.setText(url)
                 log("[ PAGE ] ${url.take(70)}")
 
                 if (url.contains("discord.com")) {
-                    // Always use the current per-account profile for anti-detection
+                    // Full 30-signal injection after DOM is ready
                     AntiBanManager.injectAntiDetection(webView, currentProfile)
                     injectTokenHarvester()
                 }
@@ -276,7 +291,6 @@ class MainActivity : AppCompatActivity() {
             if (url.isNotBlank()) {
                 val finalUrl = if (url.startsWith("http")) url else "https://$url"
                 webView.loadUrl(finalUrl)
-                log("[ NAV ] $finalUrl")
             }
         }
         etUrl.setOnEditorActionListener { _, _, _ -> btnGo.performClick(); true }
@@ -418,10 +432,6 @@ class MainActivity : AppCompatActivity() {
         currentProfile = AntiBanManager.generateProfile()
         webView.settings.userAgentString = currentProfile.userAgent
 
-        // Clear session and inject accessibility cookies for CAPTCHA bypass
-        clearWebViewSession()
-        LocalHCaptchaSolver.refreshAccessibilityCookies()
-
         val acc = accountList[currentIndex]
         tvStatus.text = "Account ${currentIndex + 1}/${accountList.size}"
         log("")
@@ -431,7 +441,15 @@ class MainActivity : AppCompatActivity() {
         log("   Username    : ${acc.username}")
         log("   DOB         : ${acc.birthMonth}/${acc.birthDay}/${acc.birthYear}")
         log("   UA          : ${currentProfile.userAgent.take(55)}...")
-        webView.loadUrl("https://discord.com/register")
+
+        // Clear session; load URL only AFTER cookies are fully removed and reinjected
+        // so hCaptcha accessibility cookies are always present when the page starts.
+        clearWebViewSession {
+            runOnUiThread {
+                LocalHCaptchaSolver.refreshAccessibilityCookies()
+                webView.loadUrl("https://discord.com/register")
+            }
+        }
     }
 
     private fun advanceToNextAccount() {
@@ -848,15 +866,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ── Session isolation ─────────────────────────────────────────────────────
-    private fun clearWebViewSession() {
-        android.webkit.CookieManager.getInstance().apply {
-            removeAllCookies(null)
-            flush()
-        }
+    /**
+     * Clears the WebView session then runs [onDone] once cookies are actually removed.
+     * Using the callback form of removeAllCookies avoids a race where we set hCaptcha
+     * accessibility cookies before the old ones are fully wiped.
+     */
+    private fun clearWebViewSession(onDone: () -> Unit = {}) {
         webView.clearCache(true)
         webView.clearHistory()
         webView.clearFormData()
         WebStorage.getInstance().deleteAllData()
+        android.webkit.CookieManager.getInstance().removeAllCookies {
+            android.webkit.CookieManager.getInstance().flush()
+            onDone()
+        }
     }
 
     // ── File operations ───────────────────────────────────────────────────────
