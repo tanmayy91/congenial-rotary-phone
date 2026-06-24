@@ -11,6 +11,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -176,8 +178,8 @@ class MainActivity : AppCompatActivity() {
         setupButtons()
         LocalHCaptchaSolver.refreshAccessibilityCookies()
         webView.loadUrl("https://discord.com/register")
-        log("[ v2 ] Discord Creator v2 ready — early-signal injection active")
-        log("[ TIP ] Tap 'Local Solver' when a CAPTCHA appears for advanced bypass")
+        log("[ v3 ] Discord Creator v3 — addDocumentStartJavaScript + WebChromeClient active")
+        log("[ TIP ] Form auto-detected; auto-reload triggers after 12s if form is missing")
         log("──────────────────────────────")
     }
 
@@ -208,25 +210,63 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         webView.settings.apply {
-            javaScriptEnabled              = true
-            domStorageEnabled              = true
-            databaseEnabled                = true
+            javaScriptEnabled                    = true
+            domStorageEnabled                    = true
+            databaseEnabled                      = true
             setSupportMultipleWindows(false)
-            userAgentString                = AntiBanManager.getRandomUserAgent()
-            mixedContentMode               = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            useWideViewPort                = true
-            loadWithOverviewMode           = true
-            cacheMode                      = WebSettings.LOAD_DEFAULT
+            userAgentString                      = AntiBanManager.getRandomUserAgent()
+            mixedContentMode                     = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            useWideViewPort                      = true
+            loadWithOverviewMode                 = true
+            cacheMode                            = WebSettings.LOAD_DEFAULT
             setSupportZoom(true)
-            builtInZoomControls            = false
-            mediaPlaybackRequiresUserGesture = false
-            allowFileAccess                = false
-            allowContentAccess             = false
+            builtInZoomControls                  = false
+            displayZoomControls                  = false
+            mediaPlaybackRequiresUserGesture      = false
+            allowFileAccess                      = false
+            allowContentAccess                   = false
             javaScriptCanOpenWindowsAutomatically = false
+            // Force desktop viewport width so Discord serves its full web app, not mobile
+            layoutAlgorithm                      = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
         }
         android.webkit.WebView.setWebContentsDebuggingEnabled(false)
 
         webView.addJavascriptInterface(DiscordBridge(), "DiscordBridge")
+
+        // ── CRITICAL: guaranteed pre-script injection ──────────────────────────
+        // addDocumentStartJavaScript fires BEFORE any page script runs (including
+        // inline <script> tags) — this is the ONLY reliable way to prevent Discord's
+        // React bundle from detecting WebView and refusing to render the form.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            WebViewCompat.addDocumentStartJavaScript(
+                webView,
+                AntiBanManager.getDocumentStartScript(),
+                setOf("*")
+            )
+            log("[ SYS ] ✓ addDocumentStartJavaScript active — pre-script injection guaranteed")
+        } else {
+            log("[ WARN ] addDocumentStartJavaScript not supported on this WebView version")
+        }
+
+        // ── WebChromeClient: handle JS dialogs, console, progress ─────────────
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                super.onProgressChanged(view, newProgress)
+                tvStatus.text = if (newProgress >= 100) "● Ready" else "↓ $newProgress%"
+            }
+            // Suppress JS alerts that would stall page rendering
+            override fun onJsAlert(v: WebView?, url: String?, msg: String?, r: JsResult?): Boolean {
+                r?.confirm(); return true
+            }
+            override fun onJsConfirm(v: WebView?, url: String?, msg: String?, r: JsResult?): Boolean {
+                r?.confirm(); return true
+            }
+            override fun onJsPrompt(v: WebView?, u: String?, m: String?, d: String?, r: JsPromptResult?): Boolean {
+                r?.confirm(d ?: ""); return true
+            }
+            // Suppress console spam from Discord's bundle
+            override fun onConsoleMessage(cm: ConsoleMessage?): Boolean = true
+        }
 
         webView.webViewClient = object : WebViewClient() {
 
@@ -234,9 +274,9 @@ class MainActivity : AppCompatActivity() {
                 super.onPageStarted(view, url, favicon)
                 url ?: return
                 etUrl.setText(url)
-                log("[ NAV ] ${url.take(70)}")
-                // Inject BEFORE Discord's React bundle executes — this is what makes the
-                // registration form render correctly instead of a blank/branded stub.
+                log("[ NAV ] ${url.take(80)}")
+                // Secondary injection via evaluateJavascript as belt-and-suspenders;
+                // addDocumentStartJavaScript above is the primary guaranteed path.
                 if (url.contains("discord.com")) {
                     AntiBanManager.injectEarlySignals(webView, currentProfile)
                 }
@@ -245,10 +285,10 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 url ?: return
-                log("[ PAGE ] ${url.take(70)}")
+                log("[ PAGE ] ${url.take(80)}")
 
                 if (url.contains("discord.com")) {
-                    // Full 30-signal injection after DOM is ready
+                    // Full 30-signal fingerprint injection after DOM is ready
                     AntiBanManager.injectAntiDetection(webView, currentProfile)
                     injectTokenHarvester()
                 }
@@ -262,17 +302,44 @@ class MainActivity : AppCompatActivity() {
                     webView.postDelayed({ injectTokenHarvester() }, 5000)
                 }
 
-                if (isRunning && url.contains("discord.com/register") && !currentAccountFillDone) {
-                    val acc = accountList.getOrNull(currentIndex) ?: return
-                    val delay = AntiBanManager.getPageLoadDelay()
-                    webView.postDelayed({ injectFormFill(acc) }, delay)
+                if (url.contains("discord.com/register")) {
+                    // Check if form rendered; auto-reload if it hasn't appeared after 12s
+                    webView.postDelayed({
+                        webView.evaluateJavascript(
+                            "(function(){ var f=document.querySelector(" +
+                            "'input[name=\"email\"],input[type=\"email\"],input[name=\"username\"]');" +
+                            "return f?'found':'missing'; })()"
+                        ) { result ->
+                            if (result?.contains("missing") == true) {
+                                log("[ RETRY ] Form not visible after 12s — reloading page...")
+                                webView.reload()
+                            } else if (result?.contains("found") == true) {
+                                log("[ FORM ] Registration form detected and ready ✓")
+                            }
+                        }
+                    }, 12_000L)
+
+                    if (isRunning && !currentAccountFillDone) {
+                        val acc = accountList.getOrNull(currentIndex) ?: return
+                        val delay = AntiBanManager.getPageLoadDelay()
+                        webView.postDelayed({ injectFormFill(acc) }, delay)
+                    }
                 }
             }
 
-            @Suppress("OVERRIDE_DEPRECATION")
             override fun onReceivedError(
-                view: WebView?, errorCode: Int, description: String?, failingUrl: String?
-            ) = log("[ ERROR ] WebView: $description ($errorCode)")
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request?.isForMainFrame == true) {
+                    val code = error?.errorCode ?: -1
+                    val desc = error?.description ?: "unknown"
+                    log("[ ERROR ] Page error $code: $desc — will retry in 5s")
+                    view?.postDelayed({ view.reload() }, 5_000L)
+                }
+            }
         }
     }
 
