@@ -27,6 +27,13 @@
             </intent-filter>
         </activity>
 
+        <!-- CaptchaActivity: launched only when req-based flow needs CAPTCHA solved -->
+        <activity
+            android:name=".CaptchaActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.DiscordCreator" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

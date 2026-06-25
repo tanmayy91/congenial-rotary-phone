@@ -1,4 +1,4 @@
-name: Build Android APK v2
+name: Build Android APK v3
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build Debug APK v2
+    name: Build Debug APK v3.1
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,20 +48,30 @@ jobs:
       - name: Upload Debug APK v2
         uses: actions/upload-artifact@v4
         with:
-          name: discord-creator-v2-debug-apk
+          name: discord-creator-v3-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
       - name: APK Download Info
         run: |
           echo "══════════════════════════════════════════════"
-          echo "✅  Build v2 successful!"
+          echo "✅  Build v3.1 successful!"
           echo ""
-          echo "📱 Download the APK:"
+          echo "📱 3 Fully-Automatic Creation Modes:"
+          echo "   ◉ BROWSER  — WebView automation + anti-detect (Chrome 123-130)"
+          echo "   ◉ REQUEST  — Direct Discord API, fastest, on-demand CAPTCHA"
+          echo "   ◉ CHROME   — Ultra-stealth Chrome 130 fingerprint, auto token"
+          echo ""
+          echo "📧 Email aliasing: tanmay@gmail.com → tanmay+shop4821@gmail.com"
+          echo "   40+ alias patterns — each account looks like a real unique user"
+          echo ""
+          echo "🔑 Token extraction: 100% automatic, zero human input needed"
+          echo "   fetch/XHR intercept + localStorage polling + cookie scan"
+          echo ""
+          echo "📥 Download the APK:"
           echo "   Go to the 'Actions' tab in your GitHub repo,"
-          echo "   click this workflow run, then download the"
-          echo "   artifact named  discord-creator-v2-debug-apk"
+          echo "   click this workflow run, download artifact:"
+          echo "   discord-creator-v3-debug-apk"
           echo ""
-          echo "   Direct URL (after login):"
           echo "   https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           echo "══════════════════════════════════════════════"

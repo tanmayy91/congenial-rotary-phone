@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">Discord Creator v2</string>
-    <string name="hint_gmail">Gmail address (e.g. user@gmail.com)</string>
-    <string name="hint_password">Password for new accounts</string>
+    <string name="app_name">Discord Creator v3</string>
+    <string name="hint_gmail">Base email (e.g. user@gmail.com)</string>
+    <string name="hint_password">Password for all accounts</string>
     <string name="hint_count">Count</string>
-    <string name="hint_url">Paste URL or verification link here</string>
-    <string name="hint_groq_key">Groq API Key — gsk_… (optional, for AI names)</string>
+    <string name="hint_url">URL / verification link</string>
+    <string name="hint_groq_key">Groq API Key — gsk_… (optional, AI names)</string>
     <string name="btn_start">▶ Start</string>
     <string name="btn_stop">■ Stop</string>
     <string name="btn_test_groq">Test AI</string>
@@ -15,8 +15,9 @@
     <string name="btn_local_solve">Local Solver</string>
     <string name="btn_accessibility">Accessibility</string>
     <string name="btn_click_register">Click Reg.</string>
-    <string name="btn_audio_solve">Audio Bypass</string>
-    <string name="label_terminal">Log — v2</string>
+    <string name="label_terminal">Log — v3</string>
     <string name="label_browser">Browser</string>
     <string name="disclaimer">Educational only</string>
+    <string name="mode_browser">BROWSER</string>
+    <string name="mode_req">REQUEST</string>
 </resources>

@@ -67,7 +67,28 @@ object AntiBanManager {
         UAEntry("Mozilla/5.0 (Macintosh; Intel Mac OS X 14.5; rv:127.0) Gecko/20100101 Firefox/127.0", 0, true, isFirefox = true),
         UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0", 127, false, isEdge = true),
         UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0", 126, false, isEdge = true),
-        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0", 125, false, isEdge = true)
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0", 125, false, isEdge = true),
+        // Chrome 128 — Windows + Mac
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36", 128, false),
+        UAEntry("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36", 128, true),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.138 Safari/537.36", 128, false),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.120 Safari/537.36", 128, false),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0", 128, false, isEdge = true),
+        // Chrome 129 — Windows + Mac
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36", 129, false),
+        UAEntry("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36", 129, true),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.103 Safari/537.36", 129, false),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.71 Safari/537.36", 129, false),
+        UAEntry("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.103 Safari/537.36", 129, true),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0", 129, false, isEdge = true),
+        // Chrome 130 — Windows + Mac (latest stable)
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36", 130, false),
+        UAEntry("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36", 130, true),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.92 Safari/537.36", 130, false),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.70 Safari/537.36", 130, false),
+        UAEntry("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.92 Safari/537.36", 130, true),
+        UAEntry("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.92 Safari/537.36", 130, true),
+        UAEntry("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0", 130, false, isEdge = true)
     )
 
     fun getRandomUserAgent(): String = UA_ENTRIES.random().ua
@@ -167,6 +188,67 @@ object AntiBanManager {
             timezoneOffset      = tzOffset,
             locale              = locale,
             fontList            = FONT_POOLS.random()
+        )
+    }
+
+    /**
+     * generateStealthProfile — Chrome mode ultra-stealth.
+     * Always produces a Chrome 130 Windows profile with the most common real-world
+     * hardware specs. This makes every Chrome-mode account indistinguishable from
+     * the most common Discord desktop user.
+     */
+    fun generateStealthProfile(): FingerprintProfile {
+        val stealthUAs = listOf(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.92 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.70 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.103 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.71 Safari/537.36"
+        )
+        val stealthRenderers = listOf(
+            "Google Inc. (Intel)"  to "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+            "Google Inc. (Intel)"  to "ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+            "Google Inc. (Intel)"  to "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)",
+            "Google Inc. (NVIDIA)" to "ANGLE (NVIDIA, NVIDIA GeForce GTX 1650 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+            "Google Inc. (NVIDIA)" to "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)"
+        )
+        val stealthScreens = listOf(
+            Triple(1920, 1080, 1040),
+            Triple(1920, 1080, 1040),
+            Triple(2560, 1440, 1400),
+            Triple(1920, 1200, 1160),
+            Triple(1536,  864,  824)
+        )
+        val (sw, sh, sa) = stealthScreens.random()
+        val (glV, glR)   = stealthRenderers.random()
+        val ua = stealthUAs.random()
+        val chromeVer = if (ua.contains("130")) 130 else 129
+        return FingerprintProfile(
+            userAgent           = ua,
+            platform            = "Win32",
+            language            = "en-US",
+            languages           = listOf("en-US", "en"),
+            doNotTrack          = null,
+            chromeMajorVersion  = chromeVer,
+            isFirefox           = false,
+            isEdge              = false,
+            isMac               = false,
+            screenWidth         = sw,
+            screenHeight        = sh,
+            screenAvailHeight   = sa,
+            colorDepth          = 24,
+            pixelRatio          = 1,
+            hardwareConcurrency = listOf(4, 8, 8, 8, 12, 16).random(),
+            deviceMemory        = listOf(4, 8, 8, 16).random(),
+            webGlVendor         = glV,
+            webGlRenderer       = glR,
+            canvasNoiseR        = (1..4).random(),
+            canvasNoiseG        = (1..4).random(),
+            audioNoiseScale     = (1..8).random() * 0.00001,
+            timezone            = "America/New_York",
+            timezoneOffset      = 300,
+            locale              = "en-US",
+            fontList            = listOf("Arial","Calibri","Cambria","Georgia","Segoe UI","Tahoma","Times New Roman","Verdana")
         )
     }
 

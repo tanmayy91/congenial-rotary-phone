@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#23272A">
+
+    <!-- Header bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:background="#5865F2"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🔐 CAPTCHA Required"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btnCaptchaCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="Cancel"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#ED4245"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp" />
+    </LinearLayout>
+
+    <!-- Status bar -->
+    <TextView
+        android:id="@+id/tvCaptchaStatus"
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:textColor="#B0E0FF"
+        android:textSize="11sp"
+        android:fontFamily="monospace"
+        android:background="#2C2F33"
+        android:text="Initializing…"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Info label -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:textColor="#FAA61A"
+        android:textSize="10sp"
+        android:text="Complete the CAPTCHA below. Token is returned automatically."
+        android:background="#1E2124" />
+
+    <!-- WebView fills the rest -->
+    <WebView
+        android:id="@+id/captchaWebView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
